@@ -12,68 +12,44 @@ alphainfuse/
 │   │   └── main.css            # Extracted CSS (64 style blocks)
 │   └── scripts/
 │       └── main.js             # Extracted JavaScript (76 script blocks)
-├── app/                        # Next.js App Router (optional)
-│   ├── layout.tsx              # Root layout with metadata
-│   └── page.tsx                # Main product page component
 ├── alphainfuse.com/            # Original files (backup)
 ├── www.drinkhydrant.com/       # Additional assets
-├── package.json                # Dependencies
-├── next.config.js              # Next.js configuration
-├── tsconfig.json               # TypeScript configuration
 ├── vercel.json                 # Vercel deployment config
 └── README.md                   # This file
 ```
 
-## 🚀 Deployment Options
-
-### Option 1: Static HTML (Simplest)
+## 🚀 Deployment
 
 Deploy the static HTML directly to Vercel:
 
+### Option 1: Deploy via Vercel Dashboard (Recommended)
+
 1. **Push to Git:**
    ```bash
-   git init
    git add .
-   git commit -m "Initial commit"
+   git commit -m "Deploy static HTML site"
+   git push
    ```
 
 2. **Deploy to Vercel:**
-   - Go to [vercel.com](https://vercel.com)
+   - Go to [vercel.com/new](https://vercel.com/new)
    - Import your repository
-   - Vercel will automatically detect the `vercel.json` config
+   - Vercel will automatically detect the static site
    - Click "Deploy"
+   - Done! Your site will be live in ~30 seconds
 
-3. **Local Testing:**
-   ```bash
-   npx serve public
-   ```
-   Visit http://localhost:3000
+### Option 2: Deploy via CLI
 
-### Option 2: Next.js (Recommended for Future Enhancements)
+```bash
+npx vercel --prod
+```
 
-Deploy as a Next.js application:
+### Local Testing
 
-1. **Install Dependencies:**
-   ```bash
-   npm install
-   ```
-
-2. **Development:**
-   ```bash
-   npm run dev
-   ```
-   Visit http://localhost:3000
-
-3. **Build:**
-   ```bash
-   npm run build
-   ```
-
-4. **Deploy to Vercel:**
-   ```bash
-   npx vercel
-   ```
-   Or connect your Git repository on [vercel.com](https://vercel.com)
+```bash
+npx serve public
+```
+Visit http://localhost:3000
 
 ## 📋 What Was Done
 
@@ -104,27 +80,17 @@ Deploy as a Next.js application:
    - Set up caching headers for performance
    - Optimized for static deployment
 
-6. **Set Up Next.js Structure**
-   - Modern App Router setup
-   - TypeScript support
-   - Proper metadata and SEO
+6. **Configured for Static Deployment**
+   - Pure HTML/CSS/JS
+   - No build process required
+   - Instant deployment
 
 ## 🔧 Configuration Files
 
 ### vercel.json
-- Routes static assets correctly
+- Enables static file serving
 - Optimizes caching for CSS/JS
-- Handles SPA routing
-
-### next.config.js
-- Static export enabled
-- Image optimization configured
-- Remote patterns for external images
-
-### package.json
-- Next.js 14
-- React 18
-- TypeScript support
+- Sets proper headers for performance
 
 ## 📝 Notes
 
