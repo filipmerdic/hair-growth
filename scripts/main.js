@@ -4435,3 +4435,325 @@ var script_loaded = !1; function loadJSscripts() { if (!script_loaded) { observe
         document.head.appendChild(style);
       }
     })();
+
+// ==================== 
+// Cart Drawer Logic
+// ==================== 
+
+(function() {
+  'use strict';
+
+  // Product variant data
+  const productVariants = {
+    '45635176038571': {
+      id: '45635176038571',
+      title: '1-MONTH SUPPLY',
+      price: 54.99,
+      compareAtPrice: 110.00,
+      image: 'https://alphainfuse.com/cdn/shop/files/alphapdp_1_eb10a6a0-6138-4f41-a890-b8595f48e9cd.png'
+    },
+    '45635176071339': {
+      id: '45635176071339',
+      title: '2-MONTH SUPPLY',
+      price: 79.99,
+      compareAtPrice: 220.00,
+      image: 'https://alphainfuse.com/cdn/shop/files/2-kk_1.jpg'
+    },
+    '45635176104107': {
+      id: '45635176104107',
+      title: '4-MONTH SUPPLY',
+      price: 129.99,
+      compareAtPrice: 440.00,
+      image: 'https://alphainfuse.com/cdn/shop/files/1-lns_1.jpg'
+    }
+  };
+
+  // Free gift values for savings calculation
+  const freeGiftsValue = 22.41 + 7.73 + 15.50; // E-book + Shipping + Needle Head = $45.64
+  const shippingProtectionPrice = 2.97;
+
+  // Cart state
+  let cartState = {
+    variantId: '45635176038571',
+    quantity: 1,
+    shippingProtection: false
+  };
+
+  // DOM Elements
+  let drawer, overlay, closeBtn;
+  let productImage, productVariant, productPrice, productCompare;
+  let qtyInput, qtyMinus, qtyPlus;
+  let savingsEl, subtotalEl;
+  let protectionCheckbox;
+  let checkoutBtn, removeBtn;
+  let couponToggle, couponForm;
+
+  // Initialize cart drawer
+  function initCartDrawer() {
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/2b21bfc4-449e-4c20-9109-bfc3eab54afa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'main.js:initCartDrawer:entry',message:'Cart drawer initialization started',data:{readyState:document.readyState},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
+    
+    // Get DOM elements
+    drawer = document.getElementById('cart-drawer');
+    overlay = document.getElementById('cart-drawer-overlay');
+    closeBtn = document.getElementById('cart-drawer-close');
+
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/2b21bfc4-449e-4c20-9109-bfc3eab54afa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'main.js:initCartDrawer:elements',message:'DOM elements fetched',data:{hasDrawer:!!drawer,hasOverlay:!!overlay,hasCloseBtn:!!closeBtn},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
+
+    if (!drawer || !overlay) return;
+
+    productImage = document.getElementById('cart-product-image');
+    productVariant = document.getElementById('cart-product-variant');
+    productPrice = document.getElementById('cart-product-price');
+    productCompare = document.getElementById('cart-product-compare');
+    qtyInput = document.getElementById('cart-qty-input');
+    qtyMinus = document.getElementById('cart-qty-minus');
+    qtyPlus = document.getElementById('cart-qty-plus');
+    savingsEl = document.getElementById('cart-savings');
+    subtotalEl = document.getElementById('cart-subtotal');
+    protectionCheckbox = document.getElementById('shipping-protection');
+    checkoutBtn = document.getElementById('cart-checkout');
+    removeBtn = document.getElementById('cart-remove-item');
+    couponToggle = document.getElementById('coupon-toggle');
+    couponForm = document.getElementById('coupon-form');
+
+    // Bind event listeners
+    bindEvents();
+  }
+
+  // Bind all event listeners
+  function bindEvents() {
+    // Close drawer events
+    closeBtn.addEventListener('click', closeCartDrawer);
+    overlay.addEventListener('click', closeCartDrawer);
+
+    // Quantity controls
+    qtyMinus.addEventListener('click', decrementQuantity);
+    qtyPlus.addEventListener('click', incrementQuantity);
+
+    // Shipping protection toggle
+    protectionCheckbox.addEventListener('change', updateCart);
+
+    // Remove item
+    removeBtn.addEventListener('click', function() {
+      closeCartDrawer();
+    });
+
+    // Checkout button
+    checkoutBtn.addEventListener('click', handleCheckout);
+
+    // Coupon toggle
+    couponToggle.addEventListener('click', toggleCoupon);
+
+    // Intercept Add to Cart button
+    interceptAddToCart();
+
+    // Close on Escape key
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape' && drawer.classList.contains('active')) {
+        closeCartDrawer();
+      }
+    });
+  }
+
+  // Intercept the Add to Cart button click
+  function interceptAddToCart() {
+    // Find the Add to Cart button and form
+    const addToCartBtn = document.getElementById('AddToCart');
+    const addToCartForm = document.querySelector('form[action*="/cart/add"]');
+
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/2b21bfc4-449e-4c20-9109-bfc3eab54afa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'main.js:interceptAddToCart',message:'Intercepting add to cart',data:{hasBtn:!!addToCartBtn,hasForm:!!addToCartForm},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+    // #endregion
+
+    // Handler function
+    function handleAddToCart(e) {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/2b21bfc4-449e-4c20-9109-bfc3eab54afa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'main.js:handleAddToCart:entry',message:'Handler called',data:{eventType:e.type,target:e.target.id,defaultPrevented:e.defaultPrevented},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+      // #endregion
+      
+      e.preventDefault();
+      e.stopPropagation();
+      e.stopImmediatePropagation();
+
+      // Get selected variant
+      const selectedVariantId = getSelectedVariantId();
+      
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/2b21bfc4-449e-4c20-9109-bfc3eab54afa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'main.js:handleAddToCart:variantId',message:'Selected variant ID',data:{variantId:selectedVariantId,hasVariant:!!selectedVariantId},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+      // #endregion
+      
+      if (selectedVariantId) {
+        cartState.variantId = selectedVariantId;
+        cartState.quantity = 1;
+        cartState.shippingProtection = false;
+        
+        // Reset protection checkbox
+        if (protectionCheckbox) {
+          protectionCheckbox.checked = false;
+        }
+
+        updateCartDisplay();
+        
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/2b21bfc4-449e-4c20-9109-bfc3eab54afa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'main.js:handleAddToCart:beforeOpen',message:'About to open drawer',data:{cartState:cartState},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+        // #endregion
+        
+        openCartDrawer();
+      }
+      
+      return false;
+    }
+
+    // Use capture phase to intercept before other handlers
+    if (addToCartBtn) {
+      addToCartBtn.addEventListener('click', handleAddToCart, true);
+      // Also add to bubble phase as backup
+      addToCartBtn.addEventListener('click', handleAddToCart, false);
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/2b21bfc4-449e-4c20-9109-bfc3eab54afa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'main.js:interceptAddToCart:btnListeners',message:'Button listeners attached',data:{btnId:addToCartBtn.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+      // #endregion
+    }
+
+    // Intercept form submission with capture
+    if (addToCartForm) {
+      addToCartForm.addEventListener('submit', handleAddToCart, true);
+      addToCartForm.addEventListener('submit', handleAddToCart, false);
+    }
+
+    // Also listen for any click on buttons with add-to-cart attributes
+    document.addEventListener('click', function(e) {
+      const target = e.target.closest('[data-product-add-to-cart-button], #AddToCart, .product-form__add-button');
+      if (target) {
+        handleAddToCart(e);
+      }
+    }, true);
+  }
+
+  // Get currently selected variant ID from the page
+  function getSelectedVariantId() {
+    // Try to get from hidden input
+    const variantInput = document.querySelector('input[name="id"][type="hidden"]');
+    if (variantInput && variantInput.value) {
+      return variantInput.value;
+    }
+
+    // Try to get from select element
+    const variantSelect = document.querySelector('select[name="id"]');
+    if (variantSelect && variantSelect.value) {
+      return variantSelect.value;
+    }
+
+    // Try to get from radio buttons (kaching bundles)
+    const selectedRadio = document.querySelector('.kaching-bundles__bar--selected');
+    if (selectedRadio) {
+      // Get variant from kaching bundles data
+      const barIndex = Array.from(document.querySelectorAll('.kaching-bundles__bar')).indexOf(selectedRadio);
+      const variantIds = Object.keys(productVariants);
+      if (barIndex >= 0 && barIndex < variantIds.length) {
+        return variantIds[barIndex];
+      }
+    }
+
+    // Default to first variant
+    return '45635176038571';
+  }
+
+  // Open cart drawer
+  function openCartDrawer() {
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/2b21bfc4-449e-4c20-9109-bfc3eab54afa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'main.js:openCartDrawer:entry',message:'Opening cart drawer',data:{hasDrawer:!!drawer,hasOverlay:!!overlay,drawerClasses:drawer?.className,overlayClasses:overlay?.className},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+    // #endregion
+    
+    drawer.classList.add('active');
+    overlay.classList.add('active');
+    document.body.classList.add('cart-drawer-open');
+    
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/2b21bfc4-449e-4c20-9109-bfc3eab54afa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'main.js:openCartDrawer:exit',message:'Classes applied',data:{drawerClasses:drawer.className,overlayClasses:overlay.className,bodyClasses:document.body.className},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+    // #endregion
+  }
+
+  // Close cart drawer
+  function closeCartDrawer() {
+    drawer.classList.remove('active');
+    overlay.classList.remove('active');
+    document.body.classList.remove('cart-drawer-open');
+  }
+
+  // Increment quantity
+  function incrementQuantity() {
+    if (cartState.quantity < 10) {
+      cartState.quantity++;
+      updateCart();
+    }
+  }
+
+  // Decrement quantity
+  function decrementQuantity() {
+    if (cartState.quantity > 1) {
+      cartState.quantity--;
+      updateCart();
+    }
+  }
+
+  // Update cart state and display
+  function updateCart() {
+    cartState.shippingProtection = protectionCheckbox.checked;
+    updateCartDisplay();
+  }
+
+  // Update cart display based on current state
+  function updateCartDisplay() {
+    const variant = productVariants[cartState.variantId];
+    if (!variant) return;
+
+    // Update product info
+    if (productImage) productImage.src = variant.image;
+    if (productVariant) productVariant.textContent = variant.title;
+    if (productPrice) productPrice.textContent = '$' + (variant.price * cartState.quantity).toFixed(2);
+    if (productCompare) productCompare.textContent = '$' + (variant.compareAtPrice * cartState.quantity).toFixed(2);
+    if (qtyInput) qtyInput.value = cartState.quantity;
+
+    // Calculate totals
+    const productTotal = variant.price * cartState.quantity;
+    const compareTotal = variant.compareAtPrice * cartState.quantity;
+    const protectionCost = cartState.shippingProtection ? shippingProtectionPrice : 0;
+    const subtotal = productTotal + protectionCost;
+    const savings = (compareTotal - productTotal) + freeGiftsValue;
+
+    // Update summary
+    if (savingsEl) savingsEl.textContent = '-$' + savings.toFixed(2);
+    if (subtotalEl) subtotalEl.textContent = '$' + subtotal.toFixed(2);
+  }
+
+  // Toggle coupon form
+  function toggleCoupon() {
+    const isVisible = couponForm.style.display !== 'none';
+    couponForm.style.display = isVisible ? 'none' : 'flex';
+    couponToggle.querySelector('.cart-drawer__coupon-icon').textContent = isVisible ? '+' : '−';
+  }
+
+  // Handle checkout
+  function handleCheckout() {
+    const variant = productVariants[cartState.variantId];
+    if (!variant) return;
+
+    // Build checkout URL with cart items
+    let checkoutUrl = 'https://alphainfuse.com/cart/' + variant.id + ':' + cartState.quantity;
+    
+    // If shipping protection is selected, we would add that product too
+    // For now, redirect to cart/checkout
+    window.location.href = checkoutUrl + '?checkout=true';
+  }
+
+  // Initialize when DOM is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initCartDrawer);
+  } else {
+    initCartDrawer();
+  }
+})();
