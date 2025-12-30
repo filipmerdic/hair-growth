@@ -1,21 +1,8 @@
 {
-  "version": 2,
   "buildCommand": "npm run build",
   "outputDirectory": "public",
-  "routes": [
-    {
-      "src": "/styles/(.*)",
-      "dest": "/styles/$1"
-    },
-    {
-      "src": "/scripts/(.*)",
-      "dest": "/scripts/$1"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/index.html"
-    }
-  ],
+  "cleanUrls": true,
+  "trailingSlash": false,
   "headers": [
     {
       "source": "/styles/(.*)",
