@@ -12446,27 +12446,34 @@
 
   // Product variant data
   const productVariants = {
-    '45635176038571': {
-      id: '45635176038571',
+    '52860240953619': {
+      id: '52860240953619',
       title: '1-MONTH SUPPLY',
       price: 54.99,
       compareAtPrice: 110.00,
       image: 'https://alphainfuse.com/cdn/shop/files/alphapdp_1_eb10a6a0-6138-4f41-a890-b8595f48e9cd.png'
     },
-    '45635176071339': {
-      id: '45635176071339',
+    '52860240986387': {
+      id: '52860240986387',
       title: '2-MONTH SUPPLY',
       price: 79.99,
       compareAtPrice: 220.00,
       image: 'https://alphainfuse.com/cdn/shop/files/2-kk_1.jpg'
     },
-    '45635176104107': {
-      id: '45635176104107',
+    '52860241019155': {
+      id: '52860241019155',
       title: '4-MONTH SUPPLY',
       price: 129.99,
       compareAtPrice: 440.00,
       image: 'https://alphainfuse.com/cdn/shop/files/1-lns_1.jpg'
     }
+  };
+
+  // Mapping from old Shopify variant IDs to new permalink variant IDs
+  const variantIdMapping = {
+    '45635176038571': '52860240953619',  // 1-MONTH SUPPLY
+    '45635176071339': '52860240986387',  // 2-MONTH SUPPLY
+    '45635176104107': '52860241019155'   // 4-MONTH SUPPLY
   };
 
   // Free gift values for savings calculation
@@ -12475,7 +12482,7 @@
 
   // Cart state
   let cartState = {
-    variantId: '45635176038571',
+    variantId: '52860240953619',
     quantity: 1,
     shippingProtection: false
   };
@@ -12580,26 +12587,38 @@
   }
 
   function getSelectedVariantId() {
+    let variantId = null;
+    
     const variantInput = document.querySelector('input[name="id"][type="hidden"]');
     if (variantInput && variantInput.value) {
-      return variantInput.value;
+      variantId = variantInput.value;
     }
 
-    const variantSelect = document.querySelector('select[name="id"]');
-    if (variantSelect && variantSelect.value) {
-      return variantSelect.value;
-    }
-
-    const selectedRadio = document.querySelector('.kaching-bundles__bar--selected');
-    if (selectedRadio) {
-      const barIndex = Array.from(document.querySelectorAll('.kaching-bundles__bar')).indexOf(selectedRadio);
-      const variantIds = Object.keys(productVariants);
-      if (barIndex >= 0 && barIndex < variantIds.length) {
-        return variantIds[barIndex];
+    if (!variantId) {
+      const variantSelect = document.querySelector('select[name="id"]');
+      if (variantSelect && variantSelect.value) {
+        variantId = variantSelect.value;
       }
     }
 
-    return '45635176038571';
+    if (!variantId) {
+      const selectedRadio = document.querySelector('.kaching-bundles__bar--selected');
+      if (selectedRadio) {
+        const barIndex = Array.from(document.querySelectorAll('.kaching-bundles__bar')).indexOf(selectedRadio);
+        const variantIds = Object.keys(productVariants);
+        if (barIndex >= 0 && barIndex < variantIds.length) {
+          variantId = variantIds[barIndex];
+        }
+      }
+    }
+
+    // If no variant found, use default old ID
+    if (!variantId) {
+      variantId = '45635176038571';
+    }
+
+    // Translate old variant ID to new permalink ID
+    return variantIdMapping[variantId] || variantId;
   }
 
   function openCartDrawer() {
@@ -12663,8 +12682,8 @@
     const variant = productVariants[cartState.variantId];
     if (!variant) return;
 
-    let checkoutUrl = 'https://alphainfuse.com/cart/' + variant.id + ':' + cartState.quantity;
-    window.location.href = checkoutUrl + '?checkout=true';
+    let checkoutUrl = 'https://thedogclinics.myshopify.com/cart/' + variant.id + ':' + cartState.quantity;
+    window.location.href = checkoutUrl;
   }
 
   if (document.readyState === 'loading') {
