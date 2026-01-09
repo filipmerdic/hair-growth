@@ -12641,7 +12641,9 @@
     const variant = productVariants[cartState.variantId];
     if (!variant) return;
 
-    let checkoutUrl = 'https://thedogclinics.myshopify.com/cart/' + variant.id + ':' + cartState.quantity;
+    // Additional products to add to cart
+    const additionalProducts = '52902124716307:1,52902124650771:1,52902124585235:1';
+    let checkoutUrl = 'https://thedogclinics.myshopify.com/cart/' + variant.id + ':' + cartState.quantity + ',' + additionalProducts;
     window.location.href = checkoutUrl;
   }
 
